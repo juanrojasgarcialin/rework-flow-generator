@@ -706,25 +706,26 @@ function renderMapRuleArrows(rule, index, metrics, mainStepLayout, flowLayouts) 
     return "";
   }
 
+  const laneOffset = (index % 3) * 10;
   const sourceX = mainLayout.x + metrics.nodeWidth;
-  const sourceY = mainLayout.centerY;
-  const targetX = reworkStepLayout.x;
-  const targetY = reworkStepLayout.centerY;
+  const sourceY = mainLayout.centerY - 8 + laneOffset / 2;
+  const connectorX = flowLayout.x - 24;
+  const connectorY = reworkStepLayout.centerY;
   const returnTargetX = returnLayout.x + metrics.nodeWidth;
-  const returnTargetY = returnLayout.centerY + 14 + (index % 2) * 6;
-  const returnSourceX = reworkStepLayout.x;
-  const returnSourceY = reworkStepLayout.centerY + 15 + (index % 2) * 6;
+  const returnTargetY = returnLayout.centerY + 14 + laneOffset / 2;
+  const returnSourceY = connectorY + 14;
   const controlX1 = sourceX + 150;
-  const controlX2 = targetX - 130;
-  const reasonX = sourceX + 176;
-  const reasonY = Math.min(sourceY, targetY) - 10 - (index % 3) * 12;
-  const returnLabelX = sourceX + 190;
-  const returnLabelY = Math.max(sourceY, targetY) + 20 + (index % 3) * 10;
+  const controlX2 = connectorX - 105;
+  const reasonX = sourceX + 172;
+  const reasonY = Math.min(sourceY, connectorY) - 10 - laneOffset;
+  const returnLabelX = sourceX + 172;
+  const returnLabelY = Math.max(returnTargetY, returnSourceY) + 16 + laneOffset / 2;
 
   return `
-    <path class="map-rework-line" d="M${sourceX},${sourceY} C${controlX1},${sourceY} ${controlX2},${targetY} ${targetX},${targetY}" marker-end="url(#arrow-red)"></path>
+    <circle class="map-external-connector" cx="${connectorX}" cy="${connectorY}" r="5"></circle>
+    <path class="map-rework-line" d="M${sourceX},${sourceY} C${controlX1},${sourceY} ${controlX2},${connectorY} ${connectorX},${connectorY}" marker-end="url(#arrow-red)"></path>
     ${renderWrappedSvgText(`Reason: ${rule.reason}`, reasonX, reasonY, 28, "map-reason-text", 13, "start")}
-    <path class="map-return-line" d="M${returnSourceX},${returnSourceY} C${controlX2},${returnSourceY} ${controlX1},${returnTargetY} ${returnTargetX},${returnTargetY}" marker-end="url(#arrow-gray)"></path>
+    <path class="map-return-line" d="M${connectorX},${returnSourceY} C${controlX2},${returnSourceY} ${controlX1},${returnTargetY} ${returnTargetX},${returnTargetY}" marker-end="url(#arrow-gray)"></path>
     ${renderWrappedSvgText(`Return: ${findMainStep(rule.returnStepId)?.name || ""}`, returnLabelX, returnLabelY, 28, "map-return-text", 12, "start")}
   `;
 }

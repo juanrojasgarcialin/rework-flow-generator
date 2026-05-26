@@ -572,6 +572,12 @@ tbody tr:last-child td {
   font-weight: 700;
 }
 
+.map-external-connector {
+  fill: #ffffff;
+  stroke: #ef4444;
+  stroke-width: 1.6;
+}
+
 .map-flow-line {
   stroke: #6b7280;
   stroke-width: 1.6;
