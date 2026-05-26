@@ -3,14 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rework Flow Generator</title>
+  <title>Generador de flujos de retrabajo</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="app-header">
     <div>
-      <p class="eyebrow">Proyecto final escolar</p>
-      <h1>Rework Flow Generator</h1>
+      <h1>Generador de flujos de retrabajo</h1>
       <p class="subtitle">Generador de Flujos de Retrabajo para procesos productivos.</p>
     </div>
     <div class="header-actions">
@@ -180,9 +179,21 @@
       </div>
     </section>
 
-    <section class="panel output-panel">
+    <section class="panel map-panel">
       <div class="section-heading">
         <span class="step-badge">4</span>
+        <div>
+          <h2>Mapa visual del proceso</h2>
+          <p>Flujo principal, salidas a retrabajo y retornos al proceso.</p>
+        </div>
+      </div>
+
+      <div id="processMapContainer" class="process-map-container"></div>
+    </section>
+
+    <section class="panel output-panel">
+      <div class="section-heading">
+        <span class="step-badge">5</span>
         <div>
           <h2>Output final</h2>
           <p>Resultado agrupado por cada paso del flujo principal.</p>

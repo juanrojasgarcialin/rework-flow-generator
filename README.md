@@ -47,6 +47,7 @@ Durante el analisis se identificaron los siguientes requerimientos:
 - Incluir botones para cargar ejemplo y limpiar datos.
 - Cargar diferentes procesos de ejemplo con un click.
 - Visualizar la distribucion de cada flujo de retrabajo seleccionado.
+- Mostrar un mapa visual del proceso con pasos principales, salidas hacia retrabajo y retornos.
 
 ## Input esperado
 
@@ -209,6 +210,8 @@ Tambien se considero que un mismo paso principal puede tener varias razones de r
 
 Una mejora posterior fue permitir que el usuario visualice la distribucion de cada flujo de retrabajo. Para resolverlo, se agrego un panel donde se selecciona un flujo con un click y se muestran sus pasos, las reglas que entran a ese flujo y el paso principal al que regresa el producto.
 
+Tambien se agrego un mapa visual similar a un diagrama de proceso. Este mapa se genera automaticamente a partir de los datos capturados: muestra el flujo principal en forma vertical, resalta los pasos que tienen retrabajo, dibuja los flujos de retrabajo a un lado y conecta las reglas con flechas de salida y retorno.
+
 ## Como ejecutar el proyecto
 
 No se requiere instalacion de dependencias.
@@ -232,9 +235,10 @@ rework-flow-generator/index.html
 5. Agregar pasos a cada flujo de retrabajo.
 6. Crear reglas indicando paso afectado, reason, flujo, paso de retrabajo y paso de retorno.
 7. Hacer click en un flujo de retrabajo para ver su distribucion.
-8. Presionar `Generar output`.
-9. Revisar la tabla final.
-10. Usar `Copiar output` para llevar el texto generado a otro documento.
+8. Revisar el mapa visual del proceso para entender las salidas y retornos.
+9. Presionar `Generar output`.
+10. Revisar la tabla final.
+11. Usar `Copiar output` para llevar el texto generado a otro documento.
 
 La biblioteca de ejemplos carga automaticamente procesos completos. El boton `Limpiar datos` borra la informacion guardada en el navegador.
 
@@ -258,5 +262,5 @@ Esta solucion muestra como un requerimiento parcialmente explicado puede analiza
 - Exportar el output a archivo `.txt` o `.csv`.
 - Importar procesos desde archivos JSON.
 - Agregar validacion para evitar nombres duplicados.
-- Mejorar la vista grafica del flujo principal y sus retrabajos.
+- Exportar el mapa visual como imagen.
 - Agregar soporte para multiples procesos principales.

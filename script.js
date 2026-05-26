@@ -35,6 +35,7 @@ const elements = {
   rulesTableBody: document.getElementById("rulesTableBody"),
   outputTableBody: document.getElementById("outputTableBody"),
   outputTextArea: document.getElementById("outputTextArea"),
+  processMapContainer: document.getElementById("processMapContainer"),
   generateOutputButton: document.getElementById("generateOutputButton"),
   generateOutputButtonTop: document.getElementById("generateOutputButtonTop"),
   copyOutputButton: document.getElementById("copyOutputButton"),
@@ -371,6 +372,7 @@ function renderAll() {
   renderReworkFlows();
   renderFlowDistribution();
   renderRules();
+  renderProcessMap();
   renderOutputTable();
   updateFormOptions();
 }
@@ -549,6 +551,182 @@ function renderFlowSelector() {
     button.textContent = flow.name;
     elements.flowSelectorContainer.appendChild(button);
   });
+}
+
+function renderProcessMap() {
+  const sortedMainSteps = getSortedSteps(mainFlow.steps);
+
+  if (sortedMainSteps.length === 0) {
+    elements.processMapContainer.innerHTML = `<div class="map-empty-state">Agrega pasos principales o carga un ejemplo para ver el mapa del proceso.</div>`;
+    return;
+  }
+
+  const metrics = {
+    width: 1160,
+    mainX: 180,
+    mainTop: 100,
+    nodeWidth: 170,
+    nodeHeight: 58,
+    nodeGap: 34,
+    reworkX: 710,
+    reworkWidth: 330,
+    reworkStepXOffset: 56,
+    reworkStepWidth: 220,
+    reworkStepHeight: 42,
+    reworkStepGap: 11,
+    reworkGap: 32
+  };
+
+  const rulesByMainStep = groupBy(rules, "mainStepId");
+  const mainStepLayout = new Map();
+  sortedMainSteps.forEach((step, index) => {
+    const y = metrics.mainTop + index * (metrics.nodeHeight + metrics.nodeGap);
+    mainStepLayout.set(Number(step.id), {
+      x: metrics.mainX,
+      y,
+      centerX: metrics.mainX + metrics.nodeWidth / 2,
+      centerY: y + metrics.nodeHeight / 2
+    });
+  });
+
+  const flowLayouts = buildReworkMapLayouts(metrics, mainStepLayout);
+  const lastMainStep = sortedMainSteps[sortedMainSteps.length - 1];
+  const lastMainLayout = mainStepLayout.get(Number(lastMainStep.id));
+  const mainEndY = lastMainLayout.y + metrics.nodeHeight + 55;
+  const mapHeight = Math.max(mainEndY + 60, ...flowLayouts.map((layout) => layout.y + layout.height + 55), 460);
+
+  const title = escapeHtml(mainFlow.name || "Proceso principal");
+  const mainCenterX = metrics.mainX + metrics.nodeWidth / 2;
+  const mainStartY = metrics.mainTop - 48;
+
+  const mainSvg = [
+    `<text class="map-title" x="${mainCenterX}" y="38" text-anchor="middle">${title}</text>`,
+    `<circle cx="${mainCenterX}" cy="${mainStartY}" r="13" fill="#ffffff" stroke="#374151" stroke-width="1.5"></circle>`,
+    `<line class="map-flow-line" x1="${mainCenterX}" y1="${mainStartY + 13}" x2="${mainCenterX}" y2="${mainEndY - 13}"></line>`,
+    ...sortedMainSteps.map((step) => {
+      const layout = mainStepLayout.get(Number(step.id));
+      const hasRework = Boolean(rulesByMainStep.get(Number(step.id))?.length);
+      return `
+        <rect class="map-node${hasRework ? " has-rework" : ""}" x="${layout.x}" y="${layout.y}" width="${metrics.nodeWidth}" height="${metrics.nodeHeight}" rx="10"></rect>
+        ${renderWrappedSvgText(step.name, layout.centerX, layout.centerY, 17, "map-node-text")}
+      `;
+    }),
+    `<circle cx="${mainCenterX}" cy="${mainEndY}" r="13" fill="#ffffff" stroke="#374151" stroke-width="1.5"></circle>`
+  ].join("");
+
+  const flowSvg = flowLayouts.map((layout) => renderReworkFlowMap(layout, metrics)).join("");
+  const arrowSvg = rules.map((rule, index) => renderMapRuleArrows(rule, index, metrics, mainStepLayout, flowLayouts)).join("");
+
+  elements.processMapContainer.innerHTML = `
+    <svg viewBox="0 0 ${metrics.width} ${mapHeight}" width="100%" height="${mapHeight}" role="img" aria-label="Mapa visual del proceso">
+      <defs>
+        <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+          <path d="M0,0 L0,6 L9,3 z" fill="#ef4444"></path>
+        </marker>
+        <marker id="arrow-gray" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+          <path d="M0,0 L0,6 L9,3 z" fill="#64748b"></path>
+        </marker>
+      </defs>
+      ${mainSvg}
+      ${flowSvg}
+      ${arrowSvg}
+    </svg>
+  `;
+}
+
+function buildReworkMapLayouts(metrics, mainStepLayout) {
+  let nextY = metrics.mainTop - 18;
+
+  return reworkFlows.map((flow, index) => {
+    const flowRules = rules.filter((rule) => Number(rule.reworkFlowId) === Number(flow.id));
+    const firstRule = flowRules[0];
+    const relatedMainLayout = firstRule ? mainStepLayout.get(Number(firstRule.mainStepId)) : null;
+    const sortedSteps = getSortedSteps(flow.steps);
+    const stepCount = Math.max(sortedSteps.length, 1);
+    const height = 92 + stepCount * (metrics.reworkStepHeight + metrics.reworkStepGap) + 36;
+    const desiredY = relatedMainLayout ? relatedMainLayout.centerY - 55 : metrics.mainTop + index * (height + metrics.reworkGap);
+    const y = Math.max(nextY, desiredY);
+    const stepYById = new Map();
+    const firstStepY = y + 72;
+
+    sortedSteps.forEach((step, stepIndex) => {
+      const stepY = firstStepY + stepIndex * (metrics.reworkStepHeight + metrics.reworkStepGap);
+      stepYById.set(Number(step.id), {
+        x: metrics.reworkX + metrics.reworkStepXOffset,
+        y: stepY,
+        centerX: metrics.reworkX + metrics.reworkStepXOffset + metrics.reworkStepWidth / 2,
+        centerY: stepY + metrics.reworkStepHeight / 2
+      });
+    });
+
+    nextY = y + height + metrics.reworkGap;
+
+    return {
+      flow,
+      steps: sortedSteps,
+      flowRules,
+      x: metrics.reworkX,
+      y,
+      height,
+      stepYById
+    };
+  });
+}
+
+function renderReworkFlowMap(layout, metrics) {
+  const panelClass = Number(layout.flow.id) === Number(selectedReworkFlowId) ? "map-rework-panel selected" : "map-rework-panel";
+  const startCircleY = layout.y + 52;
+  const endCircleY = layout.y + layout.height - 22;
+  const stepSvg = layout.steps.map((step) => {
+    const stepLayout = layout.stepYById.get(Number(step.id));
+
+    return `
+      <rect class="map-rework-step" x="${stepLayout.x}" y="${stepLayout.y}" width="${metrics.reworkStepWidth}" height="${metrics.reworkStepHeight}" rx="9"></rect>
+      ${renderWrappedSvgText(step.name, stepLayout.centerX, stepLayout.centerY, 22, "map-step-text")}
+    `;
+  }).join("");
+
+  return `
+    <rect class="${panelClass}" x="${layout.x}" y="${layout.y}" width="${metrics.reworkWidth}" height="${layout.height}" rx="12"></rect>
+    ${renderWrappedSvgText(layout.flow.name, layout.x + metrics.reworkWidth / 2, layout.y + 28, 28, "map-node-text")}
+    <circle cx="${layout.x + metrics.reworkWidth / 2}" cy="${startCircleY}" r="10" fill="#ffffff" stroke="#64748b" stroke-width="1.2"></circle>
+    <line class="map-flow-line" x1="${layout.x + metrics.reworkWidth / 2}" y1="${startCircleY + 10}" x2="${layout.x + metrics.reworkWidth / 2}" y2="${endCircleY - 10}"></line>
+    ${stepSvg || `<text class="map-label" x="${layout.x + metrics.reworkWidth / 2}" y="${layout.y + 96}" text-anchor="middle">Sin pasos registrados</text>`}
+    <circle cx="${layout.x + metrics.reworkWidth / 2}" cy="${endCircleY}" r="10" fill="#ffffff" stroke="#64748b" stroke-width="1.2"></circle>
+  `;
+}
+
+function renderMapRuleArrows(rule, index, metrics, mainStepLayout, flowLayouts) {
+  const mainLayout = mainStepLayout.get(Number(rule.mainStepId));
+  const returnLayout = mainStepLayout.get(Number(rule.returnStepId));
+  const flowLayout = flowLayouts.find((layout) => Number(layout.flow.id) === Number(rule.reworkFlowId));
+  const reworkStepLayout = flowLayout?.stepYById.get(Number(rule.reworkStepId));
+
+  if (!mainLayout || !returnLayout || !flowLayout || !reworkStepLayout) {
+    return "";
+  }
+
+  const sourceX = mainLayout.x + metrics.nodeWidth;
+  const sourceY = mainLayout.centerY;
+  const targetX = reworkStepLayout.x;
+  const targetY = reworkStepLayout.centerY;
+  const returnTargetX = returnLayout.x + metrics.nodeWidth;
+  const returnTargetY = returnLayout.centerY + 14 + (index % 2) * 6;
+  const returnSourceX = reworkStepLayout.x;
+  const returnSourceY = reworkStepLayout.centerY + 15 + (index % 2) * 6;
+  const controlX1 = sourceX + 150;
+  const controlX2 = targetX - 130;
+  const reasonX = sourceX + 176;
+  const reasonY = Math.min(sourceY, targetY) - 10 - (index % 3) * 12;
+  const returnLabelX = sourceX + 190;
+  const returnLabelY = Math.max(sourceY, targetY) + 20 + (index % 3) * 10;
+
+  return `
+    <path class="map-rework-line" d="M${sourceX},${sourceY} C${controlX1},${sourceY} ${controlX2},${targetY} ${targetX},${targetY}" marker-end="url(#arrow-red)"></path>
+    ${renderWrappedSvgText(`Reason: ${rule.reason}`, reasonX, reasonY, 28, "map-reason-text", 13, "start")}
+    <path class="map-return-line" d="M${returnSourceX},${returnSourceY} C${controlX2},${returnSourceY} ${controlX1},${returnTargetY} ${returnTargetX},${returnTargetY}" marker-end="url(#arrow-gray)"></path>
+    ${renderWrappedSvgText(`Return: ${findMainStep(rule.returnStepId)?.name || ""}`, returnLabelX, returnLabelY, 28, "map-return-text", 12, "start")}
+  `;
 }
 
 function renderRules() {
@@ -1012,6 +1190,66 @@ function cloneData(data) {
   return JSON.parse(JSON.stringify(data));
 }
 
+function groupBy(items, key) {
+  return items.reduce((groupedItems, item) => {
+    const groupKey = Number(item[key]);
+    const existingItems = groupedItems.get(groupKey) || [];
+    existingItems.push(item);
+    groupedItems.set(groupKey, existingItems);
+    return groupedItems;
+  }, new Map());
+}
+
+function renderWrappedSvgText(value, x, centerY, maxCharacters, className, lineHeight = 15, anchor = "middle") {
+  const lines = wrapText(String(value), maxCharacters);
+  const startY = centerY - ((lines.length - 1) * lineHeight) / 2 + 4;
+
+  return lines.map((line, index) => (
+    `<text class="${className}" x="${x}" y="${startY + index * lineHeight}" text-anchor="${anchor}">${escapeHtml(line)}</text>`
+  )).join("");
+}
+
+function wrapText(value, maxCharacters) {
+  const words = value.trim().split(/\s+/).filter(Boolean);
+  const lines = [];
+  let currentLine = "";
+
+  words.forEach((word) => {
+    const wordParts = splitLongWord(word, maxCharacters);
+
+    wordParts.forEach((part) => {
+      const nextLine = currentLine ? `${currentLine} ${part}` : part;
+
+      if (nextLine.length <= maxCharacters) {
+        currentLine = nextLine;
+      } else {
+        if (currentLine) {
+          lines.push(currentLine);
+        }
+        currentLine = part;
+      }
+    });
+  });
+
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+
+  return lines.length ? lines : [""];
+}
+
+function splitLongWord(word, maxCharacters) {
+  if (word.length <= maxCharacters) {
+    return [word];
+  }
+
+  const parts = [];
+  for (let index = 0; index < word.length; index += maxCharacters) {
+    parts.push(word.slice(index, index + maxCharacters));
+  }
+  return parts;
+}
+
 function createEmptyRow(colspan, text) {
   const row = document.createElement("tr");
   row.innerHTML = `<td class="muted-row" colspan="${colspan}">${text}</td>`;
@@ -1064,6 +1302,7 @@ function registerEvents() {
   elements.processNameInput.addEventListener("input", () => {
     mainFlow.name = elements.processNameInput.value.trim();
     saveData();
+    renderProcessMap();
   });
 
   elements.mainStepForm.addEventListener("submit", addMainStep);
