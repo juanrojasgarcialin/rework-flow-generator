@@ -21,6 +21,18 @@
   </header>
 
   <main class="layout">
+    <section class="panel example-panel">
+      <div class="section-heading">
+        <span class="step-badge">0</span>
+        <div>
+          <h2>Biblioteca de ejemplos</h2>
+          <p>Selecciona un proceso para cargar automaticamente sus pasos, flujos de retrabajo y reglas.</p>
+        </div>
+      </div>
+
+      <div id="exampleGallery" class="example-gallery"></div>
+    </section>
+
     <section class="panel">
       <div class="section-heading">
         <span class="step-badge">1</span>
@@ -103,6 +115,18 @@
       </form>
 
       <div id="reworkFlowsContainer" class="flow-list"></div>
+
+      <div class="distribution-view">
+        <div class="section-heading compact-heading">
+          <span class="step-badge">2A</span>
+          <div>
+            <h3>Distribucion del flujo seleccionado</h3>
+            <p>Haz click en un flujo para visualizar sus pasos, entradas desde el proceso principal y retornos.</p>
+          </div>
+        </div>
+        <div id="flowSelectorContainer" class="flow-selector"></div>
+        <div id="flowDistributionContainer" class="distribution-card"></div>
+      </div>
     </section>
 
     <section class="panel">

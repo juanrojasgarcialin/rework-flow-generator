@@ -7,6 +7,8 @@ let mainFlow = {
 
 let reworkFlows = [];
 let rules = [];
+let activeExampleId = "milk";
+let selectedReworkFlowId = null;
 
 const elements = {
   processNameInput: document.getElementById("processNameInput"),
@@ -14,6 +16,7 @@ const elements = {
   mainStepNameInput: document.getElementById("mainStepNameInput"),
   mainStepPositionInput: document.getElementById("mainStepPositionInput"),
   mainStepsTableBody: document.getElementById("mainStepsTableBody"),
+  exampleGallery: document.getElementById("exampleGallery"),
   reworkFlowForm: document.getElementById("reworkFlowForm"),
   reworkFlowNameInput: document.getElementById("reworkFlowNameInput"),
   reworkStepForm: document.getElementById("reworkStepForm"),
@@ -21,6 +24,8 @@ const elements = {
   reworkStepNameInput: document.getElementById("reworkStepNameInput"),
   reworkStepPositionInput: document.getElementById("reworkStepPositionInput"),
   reworkFlowsContainer: document.getElementById("reworkFlowsContainer"),
+  flowSelectorContainer: document.getElementById("flowSelectorContainer"),
+  flowDistributionContainer: document.getElementById("flowDistributionContainer"),
   ruleForm: document.getElementById("ruleForm"),
   ruleMainStepSelect: document.getElementById("ruleMainStepSelect"),
   ruleReasonInput: document.getElementById("ruleReasonInput"),
@@ -40,12 +45,297 @@ const elements = {
 
 let messageTimeoutId = null;
 
+const PROCESS_EXAMPLES = {
+  milk: {
+    title: "Envasado de leche",
+    description: "Caso base con leche podrida y empaque dañado.",
+    mainFlow: {
+      name: "Proceso Envasado Leche",
+      steps: [
+        { id: 1, name: "Crear Lata", position: 1 },
+        { id: 2, name: "Llenar Lata", position: 2 },
+        { id: 3, name: "Empacar Lata", position: 3 },
+        { id: 4, name: "Enviar Lata", position: 4 }
+      ]
+    },
+    reworkFlows: [
+      {
+        id: 1,
+        name: "Retrabajar Leche",
+        steps: [
+          { id: 1, name: "Hervir Leche", position: 1 },
+          { id: 2, name: "Analizar Leche", position: 2 }
+        ]
+      },
+      {
+        id: 2,
+        name: "Retrabajar Empaque",
+        steps: [
+          { id: 1, name: "Desempacar", position: 1 },
+          { id: 2, name: "Cambiar Empaque", position: 2 },
+          { id: 3, name: "Reetiquetar", position: 3 }
+        ]
+      }
+    ],
+    rules: [
+      {
+        id: 1,
+        mainStepId: 3,
+        reason: "Leche Podrida",
+        reworkFlowId: 1,
+        reworkStepId: 1,
+        returnStepId: 3
+      },
+      {
+        id: 2,
+        mainStepId: 3,
+        reason: "Empaque Dañado",
+        reworkFlowId: 2,
+        reworkStepId: 1,
+        returnStepId: 3
+      }
+    ]
+  },
+  auto: {
+    title: "Ensamblaje de auto",
+    description: "Incluye motor, sistema electrico, pintura y carroceria.",
+    mainFlow: {
+      name: "Proceso Ensamblaje de Auto",
+      steps: [
+        { id: 1, name: "Recibir Chasis", position: 1 },
+        { id: 2, name: "Instalar Motor", position: 2 },
+        { id: 3, name: "Ensamblar Carroceria", position: 3 },
+        { id: 4, name: "Instalar Sistema Electrico", position: 4 },
+        { id: 5, name: "Pintar Auto", position: 5 },
+        { id: 6, name: "Inspeccion Final", position: 6 },
+        { id: 7, name: "Entregar Auto", position: 7 }
+      ]
+    },
+    reworkFlows: [
+      {
+        id: 1,
+        name: "Retrabajar Motor",
+        steps: [
+          { id: 1, name: "Diagnosticar Motor", position: 1 },
+          { id: 2, name: "Ajustar Montaje", position: 2 },
+          { id: 3, name: "Prueba de Encendido", position: 3 }
+        ]
+      },
+      {
+        id: 2,
+        name: "Retrabajar Sistema Electrico",
+        steps: [
+          { id: 1, name: "Revisar Arnes", position: 1 },
+          { id: 2, name: "Cambiar Conector", position: 2 },
+          { id: 3, name: "Probar Circuitos", position: 3 }
+        ]
+      },
+      {
+        id: 3,
+        name: "Retrabajar Pintura",
+        steps: [
+          { id: 1, name: "Lijar Superficie", position: 1 },
+          { id: 2, name: "Repintar Panel", position: 2 },
+          { id: 3, name: "Curar Pintura", position: 3 }
+        ]
+      },
+      {
+        id: 4,
+        name: "Retrabajar Carroceria",
+        steps: [
+          { id: 1, name: "Alinear Puerta", position: 1 },
+          { id: 2, name: "Ajustar Panel", position: 2 },
+          { id: 3, name: "Validar Cierre", position: 3 }
+        ]
+      }
+    ],
+    rules: [
+      { id: 1, mainStepId: 2, reason: "Motor No Enciende", reworkFlowId: 1, reworkStepId: 1, returnStepId: 2 },
+      { id: 2, mainStepId: 4, reason: "Cableado Incorrecto", reworkFlowId: 2, reworkStepId: 1, returnStepId: 4 },
+      { id: 3, mainStepId: 5, reason: "Pintura Rayada", reworkFlowId: 3, reworkStepId: 1, returnStepId: 5 },
+      { id: 4, mainStepId: 6, reason: "Puerta Desalineada", reworkFlowId: 4, reworkStepId: 1, returnStepId: 6 }
+    ]
+  },
+  avocado: {
+    title: "Empaquetado de aguacate",
+    description: "Controla madurez, calidad, clasificacion y empaque.",
+    mainFlow: {
+      name: "Proceso Empaquetado de Aguacate",
+      steps: [
+        { id: 1, name: "Recepcionar Aguacate", position: 1 },
+        { id: 2, name: "Lavar Aguacate", position: 2 },
+        { id: 3, name: "Clasificar Tamaño", position: 3 },
+        { id: 4, name: "Inspeccionar Calidad", position: 4 },
+        { id: 5, name: "Empacar Caja", position: 5 },
+        { id: 6, name: "Enfriar Producto", position: 6 },
+        { id: 7, name: "Enviar Pedido", position: 7 }
+      ]
+    },
+    reworkFlows: [
+      {
+        id: 1,
+        name: "Reclasificar Aguacate",
+        steps: [
+          { id: 1, name: "Separar Por Madurez", position: 1 },
+          { id: 2, name: "Reasignar Categoria", position: 2 },
+          { id: 3, name: "Reintegrar Lote", position: 3 }
+        ]
+      },
+      {
+        id: 2,
+        name: "Retrabajar Calidad",
+        steps: [
+          { id: 1, name: "Retirar Fruta Dañada", position: 1 },
+          { id: 2, name: "Revisar Lote", position: 2 },
+          { id: 3, name: "Reponer Peso", position: 3 }
+        ]
+      },
+      {
+        id: 3,
+        name: "Rehacer Empaque",
+        steps: [
+          { id: 1, name: "Abrir Caja", position: 1 },
+          { id: 2, name: "Cambiar Material", position: 2 },
+          { id: 3, name: "Sellar Caja", position: 3 }
+        ]
+      }
+    ],
+    rules: [
+      { id: 1, mainStepId: 3, reason: "Tamaño Incorrecto", reworkFlowId: 1, reworkStepId: 1, returnStepId: 3 },
+      { id: 2, mainStepId: 4, reason: "Fruta Golpeada", reworkFlowId: 2, reworkStepId: 1, returnStepId: 4 },
+      { id: 3, mainStepId: 5, reason: "Caja Mal Sellada", reworkFlowId: 3, reworkStepId: 1, returnStepId: 5 }
+    ]
+  },
+  soda: {
+    title: "Fabricacion de refresco",
+    description: "Cubre mezcla, carbonatacion, llenado y etiquetado.",
+    mainFlow: {
+      name: "Proceso Fabricacion de Refresco",
+      steps: [
+        { id: 1, name: "Preparar Jarabe", position: 1 },
+        { id: 2, name: "Mezclar Bebida", position: 2 },
+        { id: 3, name: "Carbonatar", position: 3 },
+        { id: 4, name: "Llenar Botella", position: 4 },
+        { id: 5, name: "Tapar Botella", position: 5 },
+        { id: 6, name: "Etiquetar", position: 6 },
+        { id: 7, name: "Empacar", position: 7 }
+      ]
+    },
+    reworkFlows: [
+      {
+        id: 1,
+        name: "Ajustar Mezcla",
+        steps: [
+          { id: 1, name: "Medir Brix", position: 1 },
+          { id: 2, name: "Ajustar Concentrado", position: 2 },
+          { id: 3, name: "Validar Sabor", position: 3 }
+        ]
+      },
+      {
+        id: 2,
+        name: "Recarbonatar Bebida",
+        steps: [
+          { id: 1, name: "Medir CO2", position: 1 },
+          { id: 2, name: "Ajustar Carbonatacion", position: 2 },
+          { id: 3, name: "Liberar Tanque", position: 3 }
+        ]
+      },
+      {
+        id: 3,
+        name: "Retrabajar Botella",
+        steps: [
+          { id: 1, name: "Vaciar Botella", position: 1 },
+          { id: 2, name: "Lavar Botella", position: 2 },
+          { id: 3, name: "Rellenar Botella", position: 3 }
+        ]
+      },
+      {
+        id: 4,
+        name: "Reetiquetar Botella",
+        steps: [
+          { id: 1, name: "Retirar Etiqueta", position: 1 },
+          { id: 2, name: "Colocar Etiqueta Nueva", position: 2 },
+          { id: 3, name: "Inspeccionar Lote", position: 3 }
+        ]
+      }
+    ],
+    rules: [
+      { id: 1, mainStepId: 2, reason: "Sabor Fuera de Especificacion", reworkFlowId: 1, reworkStepId: 1, returnStepId: 2 },
+      { id: 2, mainStepId: 3, reason: "Bajo Gas", reworkFlowId: 2, reworkStepId: 1, returnStepId: 3 },
+      { id: 3, mainStepId: 4, reason: "Nivel Incorrecto", reworkFlowId: 3, reworkStepId: 1, returnStepId: 4 },
+      { id: 4, mainStepId: 6, reason: "Etiqueta Torcida", reworkFlowId: 4, reworkStepId: 1, returnStepId: 6 }
+    ]
+  },
+  medicine: {
+    title: "Fabricacion de medicamento",
+    description: "Ejemplo con formula, compresion, recubrimiento y blister.",
+    mainFlow: {
+      name: "Proceso Fabricacion de Medicamento",
+      steps: [
+        { id: 1, name: "Pesar Materias Primas", position: 1 },
+        { id: 2, name: "Mezclar Formula", position: 2 },
+        { id: 3, name: "Granular", position: 3 },
+        { id: 4, name: "Comprimir Tabletas", position: 4 },
+        { id: 5, name: "Recubrir Tabletas", position: 5 },
+        { id: 6, name: "Empacar Blister", position: 6 },
+        { id: 7, name: "Liberar Lote", position: 7 }
+      ]
+    },
+    reworkFlows: [
+      {
+        id: 1,
+        name: "Reajustar Formula",
+        steps: [
+          { id: 1, name: "Revisar Pesaje", position: 1 },
+          { id: 2, name: "Corregir Proporcion", position: 2 },
+          { id: 3, name: "Mezclar Nuevamente", position: 3 }
+        ]
+      },
+      {
+        id: 2,
+        name: "Retrabajar Tabletas",
+        steps: [
+          { id: 1, name: "Separar Tabletas", position: 1 },
+          { id: 2, name: "Recalibrar Prensa", position: 2 },
+          { id: 3, name: "Recomprimir", position: 3 }
+        ]
+      },
+      {
+        id: 3,
+        name: "Retrabajar Recubrimiento",
+        steps: [
+          { id: 1, name: "Retirar Lote", position: 1 },
+          { id: 2, name: "Ajustar Recubrimiento", position: 2 },
+          { id: 3, name: "Secar Nuevamente", position: 3 }
+        ]
+      },
+      {
+        id: 4,
+        name: "Retrabajar Empaque Farmaceutico",
+        steps: [
+          { id: 1, name: "Retirar Blister", position: 1 },
+          { id: 2, name: "Cambiar Folio", position: 2 },
+          { id: 3, name: "Sellar Blister", position: 3 }
+        ]
+      }
+    ],
+    rules: [
+      { id: 1, mainStepId: 2, reason: "Formula Fuera de Rango", reworkFlowId: 1, reworkStepId: 1, returnStepId: 2 },
+      { id: 2, mainStepId: 4, reason: "Tableta Quebrada", reworkFlowId: 2, reworkStepId: 1, returnStepId: 4 },
+      { id: 3, mainStepId: 5, reason: "Recubrimiento Irregular", reworkFlowId: 3, reworkStepId: 1, returnStepId: 5 },
+      { id: 4, mainStepId: 6, reason: "Lote Mal Codificado", reworkFlowId: 4, reworkStepId: 1, returnStepId: 6 }
+    ]
+  }
+};
+
 // Persistencia centralizada para que cada cambio quede guardado al recargar.
 function saveData() {
   const data = {
     mainFlow,
     reworkFlows,
-    rules
+    rules,
+    activeExampleId,
+    selectedReworkFlowId
   };
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -64,6 +354,8 @@ function loadData() {
     mainFlow = parsedData.mainFlow || mainFlow;
     reworkFlows = parsedData.reworkFlows || [];
     rules = parsedData.rules || [];
+    activeExampleId = parsedData.activeExampleId || activeExampleId;
+    selectedReworkFlowId = parsedData.selectedReworkFlowId || selectedReworkFlowId;
   } catch (error) {
     showMessage("No se pudieron cargar los datos guardados.", "error");
   }
@@ -72,12 +364,32 @@ function loadData() {
 }
 
 function renderAll() {
+  ensureSelectedReworkFlow();
+  renderExampleGallery();
   elements.processNameInput.value = mainFlow.name;
   renderMainSteps();
   renderReworkFlows();
+  renderFlowDistribution();
   renderRules();
   renderOutputTable();
   updateFormOptions();
+}
+
+function renderExampleGallery() {
+  elements.exampleGallery.innerHTML = "";
+
+  Object.entries(PROCESS_EXAMPLES).forEach(([exampleId, example]) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `example-option${exampleId === activeExampleId ? " active" : ""}`;
+    button.dataset.action = "load-example";
+    button.dataset.exampleId = exampleId;
+    button.innerHTML = `
+      <strong>${escapeHtml(example.title)}</strong>
+      <span>${escapeHtml(example.description)}</span>
+    `;
+    elements.exampleGallery.appendChild(button);
+  });
 }
 
 // Renderiza las tablas principales a partir del estado actual en memoria.
@@ -116,7 +428,7 @@ function renderReworkFlows() {
 
   reworkFlows.forEach((flow) => {
     const card = document.createElement("article");
-    card.className = "flow-card";
+    card.className = `flow-card${Number(flow.id) === Number(selectedReworkFlowId) ? " active" : ""}`;
 
     const rows = getSortedSteps(flow.steps).map((step) => `
       <tr>
@@ -134,7 +446,10 @@ function renderReworkFlows() {
           <h3 class="flow-card-title">${escapeHtml(flow.name)}</h3>
           <span class="tag">${flow.steps.length} paso(s)</span>
         </div>
-        <button class="button danger small" type="button" data-action="delete-rework-flow" data-id="${flow.id}">Eliminar flujo</button>
+        <div class="flow-card-actions">
+          <button class="button secondary small" type="button" data-action="select-rework-flow" data-id="${flow.id}">Ver distribucion</button>
+          <button class="button danger small" type="button" data-action="delete-rework-flow" data-id="${flow.id}">Eliminar flujo</button>
+        </div>
       </div>
       <div class="table-wrap">
         <table>
@@ -153,6 +468,86 @@ function renderReworkFlows() {
     `;
 
     elements.reworkFlowsContainer.appendChild(card);
+  });
+}
+
+function renderFlowDistribution() {
+  renderFlowSelector();
+
+  const selectedFlow = findReworkFlow(selectedReworkFlowId);
+
+  if (!selectedFlow) {
+    elements.flowDistributionContainer.innerHTML = `<p class="muted-row">Agrega o selecciona un flujo de retrabajo para ver su distribucion.</p>`;
+    return;
+  }
+
+  const flowRules = rules.filter((rule) => Number(rule.reworkFlowId) === Number(selectedFlow.id));
+  const sortedSteps = getSortedSteps(selectedFlow.steps);
+  const timeline = sortedSteps.map((step) => {
+    const markers = flowRules
+      .filter((rule) => Number(rule.reworkStepId) === Number(step.id))
+      .map((rule) => {
+        const mainStep = findMainStep(rule.mainStepId);
+        const returnStep = findMainStep(rule.returnStepId);
+        return `<span class="marker">Entrada: ${escapeHtml(mainStep?.name || "Paso no encontrado")} / Retorno: ${escapeHtml(returnStep?.name || "Paso no encontrado")}</span>`;
+      })
+      .join("");
+
+    return `
+      <div class="timeline-step">
+        <span class="timeline-number">${step.position}</span>
+        <div class="timeline-content">
+          <strong>${escapeHtml(step.name)}</strong>
+          <div class="marker-list">${markers || `<span class="marker">Paso del flujo</span>`}</div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  const ruleSummaries = flowRules.map((rule) => {
+    const mainStep = findMainStep(rule.mainStepId);
+    const reworkStep = findReworkStep(rule.reworkFlowId, rule.reworkStepId);
+    const returnStep = findMainStep(rule.returnStepId);
+
+    return `
+      <li class="rule-summary-item">
+        <strong>${escapeHtml(rule.reason)}</strong>: sale desde ${escapeHtml(mainStep?.name || "Paso no encontrado")},
+        entra en ${escapeHtml(reworkStep?.name || "Paso no encontrado")} y regresa a ${escapeHtml(returnStep?.name || "Paso no encontrado")}.
+      </li>
+    `;
+  }).join("");
+
+  elements.flowDistributionContainer.innerHTML = `
+    <div class="distribution-title">
+      <div>
+        <h4>${escapeHtml(selectedFlow.name)}</h4>
+        <p>${sortedSteps.length} paso(s) de retrabajo y ${flowRules.length} regla(s) asociada(s).</p>
+      </div>
+      <span class="tag">Flujo seleccionado</span>
+    </div>
+    <div class="timeline">${timeline || `<p class="muted-row">Este flujo todavia no tiene pasos.</p>`}</div>
+    <ul class="rule-summary-list">
+      ${ruleSummaries || `<li class="muted-row">Este flujo todavia no tiene reglas asociadas.</li>`}
+    </ul>
+  `;
+}
+
+function renderFlowSelector() {
+  elements.flowSelectorContainer.innerHTML = "";
+
+  if (reworkFlows.length === 0) {
+    elements.flowSelectorContainer.innerHTML = `<span class="muted-row">No hay flujos disponibles.</span>`;
+    return;
+  }
+
+  reworkFlows.forEach((flow) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `flow-selector-button${Number(flow.id) === Number(selectedReworkFlowId) ? " active" : ""}`;
+    button.dataset.action = "select-rework-flow";
+    button.dataset.id = flow.id;
+    button.textContent = flow.name;
+    elements.flowSelectorContainer.appendChild(button);
   });
 }
 
@@ -223,61 +618,19 @@ function generateOutput() {
   return outputRows;
 }
 
-// Caso de prueba completo usado para la entrega escolar.
-function loadExample() {
-  mainFlow = {
-    name: "Proceso Envasado Leche",
-    steps: [
-      { id: 1, name: "Crear Lata", position: 1 },
-      { id: 2, name: "Llenar Lata", position: 2 },
-      { id: 3, name: "Empacar Lata", position: 3 },
-      { id: 4, name: "Enviar Lata", position: 4 }
-    ]
-  };
-
-  reworkFlows = [
-    {
-      id: 1,
-      name: "Retrabajar Leche",
-      steps: [
-        { id: 1, name: "Hervir Leche", position: 1 },
-        { id: 2, name: "Analizar Leche", position: 2 }
-      ]
-    },
-    {
-      id: 2,
-      name: "Retrabajar Empaque",
-      steps: [
-        { id: 1, name: "Desempacar", position: 1 },
-        { id: 2, name: "Cambiar Empaque", position: 2 },
-        { id: 3, name: "Reetiquetar", position: 3 }
-      ]
-    }
-  ];
-
-  rules = [
-    {
-      id: 1,
-      mainStepId: 3,
-      reason: "Leche Podrida",
-      reworkFlowId: 1,
-      reworkStepId: 1,
-      returnStepId: 3
-    },
-    {
-      id: 2,
-      mainStepId: 3,
-      reason: "Empaque Dañado",
-      reworkFlowId: 2,
-      reworkStepId: 1,
-      returnStepId: 3
-    }
-  ];
+// Carga un caso completo de la biblioteca de ejemplos.
+function loadExample(exampleId = activeExampleId) {
+  const example = PROCESS_EXAMPLES[exampleId] || PROCESS_EXAMPLES.milk;
+  activeExampleId = PROCESS_EXAMPLES[exampleId] ? exampleId : "milk";
+  mainFlow = cloneData(example.mainFlow);
+  reworkFlows = cloneData(example.reworkFlows);
+  rules = cloneData(example.rules);
+  selectedReworkFlowId = reworkFlows[0]?.id || null;
 
   saveData();
   renderAll();
   generateOutput();
-  showMessage("Ejemplo cargado correctamente.", "success");
+  showMessage(`Ejemplo cargado: ${example.title}.`, "success");
 }
 
 function clearData() {
@@ -290,6 +643,8 @@ function clearData() {
   mainFlow = { name: "", steps: [] };
   reworkFlows = [];
   rules = [];
+  activeExampleId = "milk";
+  selectedReworkFlowId = null;
   localStorage.removeItem(STORAGE_KEY);
   renderAll();
   showMessage("Datos limpiados correctamente.", "success");
@@ -360,11 +715,17 @@ function addReworkFlow(event) {
     return;
   }
 
-  reworkFlows.push({
+  const newFlow = {
     id: getNextId(reworkFlows),
     name: flowName,
     steps: []
-  });
+  };
+
+  reworkFlows.push(newFlow);
+
+  if (!selectedReworkFlowId) {
+    selectedReworkFlowId = newFlow.id;
+  }
 
   elements.reworkFlowNameInput.value = "";
   saveData();
@@ -540,6 +901,14 @@ function handleTableActions(event) {
     deleteMainStep(id);
   }
 
+  if (action === "load-example") {
+    loadExample(button.dataset.exampleId);
+  }
+
+  if (action === "select-rework-flow") {
+    selectReworkFlow(id);
+  }
+
   if (action === "delete-rework-flow") {
     deleteReworkFlow(id);
   }
@@ -564,6 +933,7 @@ function deleteMainStep(stepId) {
 function deleteReworkFlow(flowId) {
   reworkFlows = reworkFlows.filter((flow) => Number(flow.id) !== Number(flowId));
   rules = rules.filter((rule) => Number(rule.reworkFlowId) !== Number(flowId));
+  ensureSelectedReworkFlow();
   saveData();
   renderAll();
   showMessage("Flujo de retrabajo eliminado.", "success");
@@ -589,6 +959,17 @@ function deleteRule(ruleId) {
   renderAll();
   generateOutput();
   showMessage("Regla eliminada.", "success");
+}
+
+function selectReworkFlow(flowId) {
+  if (!findReworkFlow(flowId)) {
+    return;
+  }
+
+  selectedReworkFlowId = flowId;
+  saveData();
+  renderAll();
+  showMessage("Distribucion actualizada.", "success");
 }
 
 function findMainStep(stepId) {
@@ -620,6 +1001,15 @@ function getRequestedPosition(positionValue, steps) {
   }
 
   return steps.length ? Math.max(...steps.map((step) => Number(step.position))) + 1 : 1;
+}
+
+function ensureSelectedReworkFlow() {
+  const selectedExists = reworkFlows.some((flow) => Number(flow.id) === Number(selectedReworkFlowId));
+  selectedReworkFlowId = selectedExists ? selectedReworkFlowId : reworkFlows[0]?.id || null;
+}
+
+function cloneData(data) {
+  return JSON.parse(JSON.stringify(data));
 }
 
 function createEmptyRow(colspan, text) {
@@ -684,7 +1074,7 @@ function registerEvents() {
   elements.generateOutputButton.addEventListener("click", generateOutput);
   elements.generateOutputButtonTop.addEventListener("click", generateOutput);
   elements.copyOutputButton.addEventListener("click", copyOutput);
-  elements.loadExampleButton.addEventListener("click", loadExample);
+  elements.loadExampleButton.addEventListener("click", () => loadExample(activeExampleId));
   elements.clearDataButton.addEventListener("click", clearData);
   document.addEventListener("click", handleTableActions);
 }

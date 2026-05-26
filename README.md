@@ -10,6 +10,8 @@ Rework Flow Generator, o Generador de Flujos de Retrabajo, es una aplicacion web
 
 El sistema permite registrar un flujo principal, crear flujos alternos de retrabajo, definir reglas y generar automaticamente el texto requerido para cada paso del proceso.
 
+Ademas incluye una biblioteca de ejemplos para probar procesos mas variados, como ensamblaje de auto, empaquetado de aguacate, fabricacion de refresco y fabricacion de medicamento.
+
 ## Statement del problema
 
 En un proceso productivo real, un producto normalmente avanza por una secuencia de pasos. Sin embargo, en cualquier punto puede aparecer una falla, defecto o situacion especial que obligue al producto a salir del flujo normal.
@@ -43,6 +45,8 @@ Durante el analisis se identificaron los siguientes requerimientos:
 - Permitir copiar el output generado.
 - Guardar automaticamente la informacion en LocalStorage.
 - Incluir botones para cargar ejemplo y limpiar datos.
+- Cargar diferentes procesos de ejemplo con un click.
+- Visualizar la distribucion de cada flujo de retrabajo seleccionado.
 
 ## Input esperado
 
@@ -134,9 +138,17 @@ GoToFlowPath[Flujo/Paso] ReturnStep[Paso] Reason[Razon];
 
 Finalmente, si existen varias reglas para el mismo paso, se unen en una sola celda separadas por un espacio.
 
-## Proceso elegido para ejemplificar
+## Procesos elegidos para ejemplificar
 
-El ejemplo incluido en la aplicacion usa un proceso de envasado de leche:
+La aplicacion incluye varios ejemplos para mostrar que la solucion no se limita a un proceso simple:
+
+- Envasado de leche.
+- Ensamblaje de un auto.
+- Empaquetado de aguacate.
+- Fabricacion de un refresco.
+- Fabricacion de un medicamento.
+
+El ejemplo base usa un proceso de envasado de leche:
 
 Proceso principal:
 
@@ -162,6 +174,8 @@ Reglas:
 
 - Si en `Empacar Lata` ocurre `Leche Podrida`, ir a `Retrabajar Leche/Hervir Leche` y regresar a `Empacar Lata`.
 - Si en `Empacar Lata` ocurre `Empaque Dañado`, ir a `Retrabajar Empaque/Desempacar` y regresar a `Empacar Lata`.
+
+Los ejemplos adicionales siguen la misma logica, pero agregan mas pasos y mas flujos alternos para representar escenarios de negocio mas realistas.
 
 ## Herramientas utilizadas
 
@@ -193,6 +207,8 @@ Otro reto fue mantener la informacion despues de recargar la pagina. Se resolvio
 
 Tambien se considero que un mismo paso principal puede tener varias razones de retrabajo. La funcion de generacion agrupa las reglas por paso principal y concatena los resultados en la misma celda.
 
+Una mejora posterior fue permitir que el usuario visualice la distribucion de cada flujo de retrabajo. Para resolverlo, se agrego un panel donde se selecciona un flujo con un click y se muestran sus pasos, las reglas que entran a ese flujo y el paso principal al que regresa el producto.
+
 ## Como ejecutar el proyecto
 
 No se requiere instalacion de dependencias.
@@ -209,16 +225,18 @@ rework-flow-generator/index.html
 
 ## Como usar la aplicacion
 
-1. Capturar el nombre del proceso principal.
-2. Agregar los pasos principales con su posicion.
-3. Crear uno o varios flujos de retrabajo.
-4. Agregar pasos a cada flujo de retrabajo.
-5. Crear reglas indicando paso afectado, reason, flujo, paso de retrabajo y paso de retorno.
-6. Presionar `Generar output`.
-7. Revisar la tabla final.
-8. Usar `Copiar output` para llevar el texto generado a otro documento.
+1. Elegir un ejemplo desde la biblioteca o capturar un proceso propio.
+2. Capturar el nombre del proceso principal.
+3. Agregar los pasos principales con su posicion.
+4. Crear uno o varios flujos de retrabajo.
+5. Agregar pasos a cada flujo de retrabajo.
+6. Crear reglas indicando paso afectado, reason, flujo, paso de retrabajo y paso de retorno.
+7. Hacer click en un flujo de retrabajo para ver su distribucion.
+8. Presionar `Generar output`.
+9. Revisar la tabla final.
+10. Usar `Copiar output` para llevar el texto generado a otro documento.
 
-El boton `Cargar ejemplo` llena automaticamente el caso de la lata de leche. El boton `Limpiar datos` borra la informacion guardada en el navegador.
+La biblioteca de ejemplos carga automaticamente procesos completos. El boton `Limpiar datos` borra la informacion guardada en el navegador.
 
 ## Ejemplo de output
 
@@ -240,5 +258,5 @@ Esta solucion muestra como un requerimiento parcialmente explicado puede analiza
 - Exportar el output a archivo `.txt` o `.csv`.
 - Importar procesos desde archivos JSON.
 - Agregar validacion para evitar nombres duplicados.
-- Crear una vista grafica del flujo principal y sus retrabajos.
+- Mejorar la vista grafica del flujo principal y sus retrabajos.
 - Agregar soporte para multiples procesos principales.
