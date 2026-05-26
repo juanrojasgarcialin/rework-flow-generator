@@ -1,10 +1,8 @@
 # Rework Flow Generator
 
-**Nombre del estudiante:** _______________________________
+**Nombre del estudiante:** Juan Jose Rojas Garcia
 
-**Grupo:** _______________________________
-
-**Integrantes:** _______________________________
+**Grupo:** 942
 
 ## Descripcion general
 
