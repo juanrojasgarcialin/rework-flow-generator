@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rework Flow Generator</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">Proyecto final escolar</p>
+      <h1>Rework Flow Generator</h1>
+      <p class="subtitle">Generador de Flujos de Retrabajo para procesos productivos.</p>
+    </div>
+    <div class="header-actions">
+      <button id="loadExampleButton" type="button" class="button secondary">Cargar ejemplo</button>
+      <button id="generateOutputButtonTop" type="button" class="button primary">Generar output</button>
+      <button id="clearDataButton" type="button" class="button danger">Limpiar datos</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel">
+      <div class="section-heading">
+        <span class="step-badge">1</span>
+        <div>
+          <h2>Proceso principal</h2>
+          <p>Define el flujo normal de produccion y sus pasos.</p>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <label class="field field-wide" for="processNameInput">
+          <span>Nombre del proceso principal</span>
+          <input id="processNameInput" type="text" placeholder="Ej. Proceso Envasado Leche">
+        </label>
+      </div>
+
+      <form id="mainStepForm" class="form-grid">
+        <label class="field" for="mainStepNameInput">
+          <span>Nombre del paso</span>
+          <input id="mainStepNameInput" type="text" placeholder="Ej. Empacar Lata">
+        </label>
+        <label class="field compact" for="mainStepPositionInput">
+          <span>Posicion</span>
+          <input id="mainStepPositionInput" type="number" min="1" placeholder="Auto">
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="button primary">Agregar paso principal</button>
+        </div>
+      </form>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Posicion</th>
+              <th>Paso</th>
+              <th class="action-column">Accion</th>
+            </tr>
+          </thead>
+          <tbody id="mainStepsTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading">
+        <span class="step-badge">2</span>
+        <div>
+          <h2>Flujos de retrabajo</h2>
+          <p>Registra los flujos alternos y sus pasos internos.</p>
+        </div>
+      </div>
+
+      <form id="reworkFlowForm" class="form-grid">
+        <label class="field field-wide" for="reworkFlowNameInput">
+          <span>Nombre del flujo de retrabajo</span>
+          <input id="reworkFlowNameInput" type="text" placeholder="Ej. Retrabajar Leche">
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="button primary">Agregar flujo de retrabajo</button>
+        </div>
+      </form>
+
+      <form id="reworkStepForm" class="form-grid">
+        <label class="field" for="reworkFlowSelect">
+          <span>Flujo</span>
+          <select id="reworkFlowSelect"></select>
+        </label>
+        <label class="field" for="reworkStepNameInput">
+          <span>Paso de retrabajo</span>
+          <input id="reworkStepNameInput" type="text" placeholder="Ej. Hervir Leche">
+        </label>
+        <label class="field compact" for="reworkStepPositionInput">
+          <span>Posicion</span>
+          <input id="reworkStepPositionInput" type="number" min="1" placeholder="Auto">
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="button primary">Agregar paso de retrabajo</button>
+        </div>
+      </form>
+
+      <div id="reworkFlowsContainer" class="flow-list"></div>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading">
+        <span class="step-badge">3</span>
+        <div>
+          <h2>Reglas de retrabajo</h2>
+          <p>Relaciona el paso afectado, la razon, el retrabajo y el retorno.</p>
+        </div>
+      </div>
+
+      <form id="ruleForm" class="form-grid rule-grid">
+        <label class="field" for="ruleMainStepSelect">
+          <span>Paso principal afectado</span>
+          <select id="ruleMainStepSelect"></select>
+        </label>
+        <label class="field" for="ruleReasonInput">
+          <span>Reason</span>
+          <input id="ruleReasonInput" type="text" placeholder="Ej. Leche Podrida">
+        </label>
+        <label class="field" for="ruleReworkFlowSelect">
+          <span>Flujo de retrabajo</span>
+          <select id="ruleReworkFlowSelect"></select>
+        </label>
+        <label class="field" for="ruleReworkStepSelect">
+          <span>Paso inicial de retrabajo</span>
+          <select id="ruleReworkStepSelect"></select>
+        </label>
+        <label class="field" for="ruleReturnStepSelect">
+          <span>Paso de retorno</span>
+          <select id="ruleReturnStepSelect"></select>
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="button primary">Agregar regla</button>
+        </div>
+      </form>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Paso principal</th>
+              <th>Reason</th>
+              <th>GoToFlowPath</th>
+              <th>ReturnStep</th>
+              <th class="action-column">Accion</th>
+            </tr>
+          </thead>
+          <tbody id="rulesTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel output-panel">
+      <div class="section-heading">
+        <span class="step-badge">4</span>
+        <div>
+          <h2>Output final</h2>
+          <p>Resultado agrupado por cada paso del flujo principal.</p>
+        </div>
+      </div>
+
+      <div class="output-actions">
+        <button id="generateOutputButton" type="button" class="button primary">Generar output</button>
+        <button id="copyOutputButton" type="button" class="button secondary">Copiar output</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Position</th>
+              <th>Step</th>
+              <th>Reworks</th>
+            </tr>
+          </thead>
+          <tbody id="outputTableBody"></tbody>
+        </table>
+      </div>
+
+      <label class="field textarea-field" for="outputTextArea">
+        <span>Output generado</span>
+        <textarea id="outputTextArea" rows="7" readonly></textarea>
+      </label>
+    </section>
+  </main>
+
+  <div id="messageBox" class="message" aria-live="polite"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
